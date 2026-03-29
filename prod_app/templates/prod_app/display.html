@@ -1,0 +1,299 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Product Management System</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <link href="https://cdn.datatables.net/1.13.4/css/dataTables.bootstrap5.min.css" rel="stylesheet">
+    <style>
+        body {
+            background-color: #f8f9fa;
+        }
+        .navbar-custom {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        }
+        .navbar-brand {
+            font-weight: 700;
+            font-size: 1.5rem;
+        }
+        .welcome-text {
+            color: rgba(255, 255, 255, 0.9);
+            font-weight: 500;
+        }
+        .btn-logout {
+            background: rgba(255, 255, 255, 0.2);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            color: white;
+            transition: all 0.3s ease;
+        }
+        .btn-logout:hover {
+            background: rgba(255, 255, 255, 0.3);
+            color: white;
+        }
+        .dashboard-header {
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+            padding: 2rem;
+            margin-bottom: 2rem;
+        }
+        .stats-card {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border-radius: 15px;
+            padding: 1.5rem;
+            margin-bottom: 1rem;
+            border: none;
+        }
+        .btn-add-product {
+            background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+            border: none;
+            border-radius: 25px;
+            padding: 12px 30px;
+            font-weight: 600;
+            box-shadow: 0 4px 15px rgba(40, 167, 69, 0.3);
+            transition: all 0.3s ease;
+        }
+        .btn-add-product:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(40, 167, 69, 0.4);
+        }
+        .table-container {
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+            padding: 2rem;
+            overflow-x: auto;
+        }
+        .table {
+            border-radius: 10px;
+            overflow: hidden;
+        }
+        .table thead th {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            font-weight: 600;
+            text-transform: uppercase;
+            font-size: 0.85rem;
+            letter-spacing: 0.5px;
+        }
+        .table tbody tr:hover {
+            background-color: #f8f9fa;
+        }
+        .btn-action {
+            border-radius: 20px;
+            padding: 6px 15px;
+            font-size: 0.85rem;
+            font-weight: 500;
+            margin: 0 2px;
+            transition: all 0.3s ease;
+        }
+        .btn-edit {
+            background: linear-gradient(135deg, #ffc107 0%, #fd7e14 100%);
+            border: none;
+            color: white;
+        }
+        .btn-edit:hover {
+            background: linear-gradient(135deg, #fd7e14 0%, #e8590c 100%);
+            transform: translateY(-1px);
+        }
+        .btn-delete {
+            background: linear-gradient(135deg, #dc3545 0%, #c82333 100%);
+            border: none;
+            color: white;
+        }
+        .btn-delete:hover {
+            background: linear-gradient(135deg, #c82333 0%, #a02622 100%);
+            transform: translateY(-1px);
+        }
+        .alert-custom {
+            border-radius: 10px;
+            border: none;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+        }
+        .empty-state {
+            text-align: center;
+            padding: 3rem;
+            color: #6c757d;
+        }
+        .empty-state i {
+            font-size: 4rem;
+            margin-bottom: 1rem;
+            opacity: 0.5;
+        }
+    </style>
+</head>
+<body>
+    <nav class="navbar navbar-expand-lg navbar-custom">
+        <div class="container">
+            <a class="navbar-brand text-white" href="#">
+                <i class="fas fa-box-open me-2"></i>Product Management System
+            </a>
+            <div class="navbar-nav ms-auto">
+                <span class="navbar-text welcome-text me-3">
+                    <i class="fas fa-user-circle me-1"></i>Welcome, {{ user.username }}!
+                </span>
+                <a href="{% url 'chatbot' %}" class="btn btn-outline-light btn-sm me-2">
+                    <i class="fas fa-robot me-1"></i>AI Assistant
+                </a>
+                <a href="{% url 'logout' %}" class="btn btn-logout btn-sm">
+                    <i class="fas fa-sign-out-alt me-1"></i>Logout
+                </a>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container mt-4">
+        <div class="dashboard-header">
+            <div class="row align-items-center">
+                <div class="col-md-8">
+                    <h1 class="mb-0">
+                        <i class="fas fa-tachometer-alt text-primary me-3"></i>Dashboard
+                    </h1>
+                    <p class="text-muted mb-0 mt-2">Manage your products efficiently</p>
+                </div>
+                <div class="col-md-4 text-end">
+                    <a href="{% url 'add_product' %}" class="btn btn-add-product">
+                        <i class="fas fa-plus me-2"></i>Add New Product
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        {% if messages %}
+            <div class="row mb-4">
+                <div class="col-12">
+                    {% for message in messages %}
+                        <div class="alert alert-{{ message.tags }} alert-custom alert-dismissible fade show" role="alert">
+                            <i class="fas fa-info-circle me-2"></i>{{ message }}
+                            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                        </div>
+                    {% endfor %}
+                </div>
+            </div>
+        {% endif %}
+
+        <div class="row mb-4">
+            <div class="col-md-4">
+                <div class="stats-card">
+                    <div class="d-flex align-items-center">
+                        <div class="me-3">
+                            <i class="fas fa-box fa-2x"></i>
+                        </div>
+                        <div>
+                            <h3 class="mb-0">{{ data|length }}</h3>
+                            <small>Total Products</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="stats-card">
+                    <div class="d-flex align-items-center">
+                        <div class="me-3">
+                            <i class="fas fa-rupee-sign fa-2x"></i>
+                        </div>
+                        <div>
+                            <h3 class="mb-0">{% widthratio data|length 1 100 %}%</h3>
+                            <small>Inventory Health</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="stats-card">
+                    <div class="d-flex align-items-center">
+                        <div class="me-3">
+                            <i class="fas fa-chart-line fa-2x"></i>
+                        </div>
+                        <div>
+                            <h3 class="mb-0">Active</h3>
+                            <small>System Status</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="table-container">
+            <h3 class="mb-4">
+                <i class="fas fa-list text-primary me-2"></i>Product Inventory
+            </h3>
+            {% if data %}
+                <div class="table-responsive">
+                    <table class="table table-hover" id="productsTable">
+                        <thead>
+                            <tr>
+                                <th><i class="fas fa-hashtag me-1"></i>ID</th>
+                                <th><i class="fas fa-tag me-1"></i>Product Name</th>
+                                <th><i class="fas fa-align-left me-1"></i>Description</th>
+                                <th><i class="fas fa-rupee-sign me-1"></i>Price</th>
+                                <th><i class="fas fa-cubes me-1"></i>Quantity</th>
+                                <th><i class="fas fa-cogs me-1"></i>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for s in data %}
+                            <tr>
+                                <td class="fw-bold">#{{ s.id }}</td>
+                                <td class="fw-semibold">{{ s.name }}</td>
+                                <td>{{ s.description|truncatechars:50 }}</td>
+                                <td class="text-success fw-bold">Rs {{ s.price }}</td>
+                                <td>
+                                    <span class="badge bg-{% if s.quantity > 10 %}success{% elif s.quantity > 5 %}warning{% else %}danger{% endif %} rounded-pill">
+                                        {{ s.quantity }}
+                                    </span>
+                                </td>
+                                <td>
+                                    <a href="{% url 'update_product' s.id %}" class="btn btn-action btn-edit btn-sm">
+                                        <i class="fas fa-edit me-1"></i>Edit
+                                    </a>
+                                    <a href="{% url 'delete_product' s.id %}" class="btn btn-action btn-delete btn-sm">
+                                        <i class="fas fa-trash me-1"></i>Delete
+                                    </a>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            {% else %}
+                <div class="empty-state">
+                    <i class="fas fa-box-open"></i>
+                    <h4>No Products Found</h4>
+                    <p>Start by adding your first product to the inventory.</p>
+                    <a href="{% url 'add_product' %}" class="btn btn-add-product">
+                        <i class="fas fa-plus me-2"></i>Add Your First Product
+                    </a>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://code.jquery.com/jquery-3.7.0.min.js"></script>
+    <script src="https://cdn.datatables.net/1.13.4/js/jquery.dataTables.min.js"></script>
+    <script src="https://cdn.datatables.net/1.13.4/js/dataTables.bootstrap5.min.js"></script>
+    <script>
+        $(document).ready(function() {
+            $('#productsTable').DataTable({
+                "pageLength": 10,
+                "ordering": true,
+                "searching": true,
+                "paging": true,
+                "info": true,
+                "responsive": true,
+                "language": {
+                    "search": "Search products:",
+                    "lengthMenu": "Show _MENU_ products per page",
+                    "info": "Showing _START_ to _END_ of _TOTAL_ products"
+                }
+            });
+        });
+    </script>
+</body>
+</html>
