@@ -123,10 +123,22 @@
                             {% endfor %}
                         {% endif %}
 
-                        <form method="post" novalidate>
+                        <form method="post" enctype="multipart/form-data" novalidate>
                             {% csrf_token %}
 
                             <div class="row">
+                                                                <div class="col-12 mb-4">
+                                                                    <label for="image" class="form-label">
+                                                                        <i class="fas fa-image me-2 text-info"></i>Product Image
+                                                                    </label>
+                                                                    {% if product.image %}
+                                                                        <div class="mb-2">
+                                                                            <img src="{{ product.image.url }}" alt="Product Image" class="img-thumbnail" style="max-width: 120px;">
+                                                                        </div>
+                                                                    {% endif %}
+                                                                    <input class="form-control" type="file" id="image" name="image" accept="image/*">
+                                                                    <small class="text-muted">Leave blank to keep current image.</small>
+                                                                </div>
                                 <div class="col-12 mb-4">
                                     <label for="name" class="form-label">
                                         <i class="fas fa-tag me-2 text-warning"></i>Product Name
@@ -176,6 +188,29 @@
                                         </span>
                                         <input type="number" min="0" class="form-control"
                                                id="quantity" name="quantity" value="{{ product.quantity }}" placeholder="0" required>
+                                    </div>
+                                </div>
+
+                                <div class="col-md-6 mb-4">
+                                    <label for="category" class="form-label">
+                                        <i class="fas fa-th-large me-2 text-secondary"></i>Category
+                                    </label>
+                                    <div class="input-group">
+                                        <span class="input-group-text">
+                                            <i class="fas fa-th-large"></i>
+                                        </span>
+                                        <select class="form-select" id="category" name="category" required>
+                                            <option value="">Select Category</option>
+                                            <option value="electronics" {% if product.category == 'electronics' %}selected{% endif %}>Electronics</option>
+                                            <option value="clothing" {% if product.category == 'clothing' %}selected{% endif %}>Clothing</option>
+                                            <option value="books" {% if product.category == 'books' %}selected{% endif %}>Books</option>
+                                            <option value="home" {% if product.category == 'home' %}selected{% endif %}>Home & Kitchen</option>
+                                            <option value="sports" {% if product.category == 'sports' %}selected{% endif %}>Sports & Fitness</option>
+                                            <option value="beauty" {% if product.category == 'beauty' %}selected{% endif %}>Beauty & Personal Care</option>
+                                            <option value="toys" {% if product.category == 'toys' %}selected{% endif %}>Toys & Games</option>
+                                            <option value="automotive" {% if product.category == 'automotive' %}selected{% endif %}>Automotive</option>
+                                            <option value="other" {% if product.category == 'other' %}selected{% endif %}>Other</option>
+                                        </select>
                                     </div>
                                 </div>
                             </div>

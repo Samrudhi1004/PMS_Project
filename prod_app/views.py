@@ -7,7 +7,7 @@ from django.contrib.auth.decorators import login_required
 from django.http import JsonResponse
 import json
 import re
-from django.db.models import Q, Sum
+from django.db.models import Q, Sum, Count
 
 # Multilingual responses
 RESPONSES = {
@@ -32,6 +32,7 @@ RESPONSES = {
         'update_help': "To update a product, go to the products table and click the 'Edit' button next to the product you want to modify.",
         'delete_help': "To delete a product, click the 'Delete' button next to the product in the table. Please be careful as this action cannot be undone.",
         'help': """I can help you with:
+• � Dashboard analytics and statistics
 • 📋 Show all products
 • 🔍 Search for specific products
 • 💰 Check prices and costs
@@ -41,6 +42,7 @@ RESPONSES = {
 • 🗑️ Assist with deleting products
 
 Try asking me things like:
+• "Show dashboard" or "Analytics"
 • "Show me all products"
 • "Find laptops"
 • "What's the cheapest product?"
@@ -70,6 +72,7 @@ Try asking me things like:
         'update_help': "किसी उत्पाद को अपडेट करने के लिए, उत्पाद की टेबल में उस उत्पाद के बगल में 'Edit' बटन पर क्लिक करें।",
         'delete_help': "किसी उत्पाद को हटाने के लिए, टेबल में उत्पाद के बगल में 'Delete' बटन पर क्लिक करें। कृपया सावधान रहें क्योंकि यह क्रिया वापस नहीं की जा सकती।",
         'help': """मैं आपकी इन मदों में मदद कर सकता हूं:
+• � डैशबोर्ड विश्लेषण और आंकड़े
 • 📋 सभी उत्पाद दिखाएं
 • 🔍 विशिष्ट उत्पाद खोजें
 • 💰 कीमतें और लागत जांचें
@@ -79,6 +82,7 @@ Try asking me things like:
 • 🗑️ उत्पाद हटाने में सहायता
 
 ऐसी बातें पूछने की कोशिश करें:
+• "डैशबोर्ड दिखाएं" या "विश्लेषण"
 • "मुझे सभी उत्पाद दिखाएं"
 • "लैपटॉप ढूंढें"
 • "सबसे सस्ता उत्पाद क्या है?"
@@ -108,6 +112,7 @@ Try asking me things like:
         'update_help': "काही उत्पाद अपडेट करण्यासाठी, उत्पादांच्या टेबलमध्ये त्या उत्पादाच्या बाजूला 'Edit' बटनावर क्लिक करा.",
         'delete_help': "काही उत्पाद काढण्यासाठी, टेबलमध्ये उत्पादाच्या बाजूला 'Delete' बटनावर क्लिक करा. कृपया काळजी घ्या कारण ही क्रिया परत केली जाऊ शकत नाही.",
         'help': """मी तुम्हाला या गोष्टींमध्ये मदत करू शकतो:
+• � डॅशबोर्ड विश्लेषण आणि आकडेवारी
 • 📋 सर्व उत्पाद दाखवा
 • 🔍 विशिष्ट उत्पाद शोधा
 • 💰 किंमती आणि खर्च तपासा
@@ -117,6 +122,7 @@ Try asking me things like:
 • 🗑️ उत्पाद काढण्यात सहाय्य
 
 अशा गोष्टी विचारण्याचा प्रयत्न करा:
+• "डॅशबोर्ड दाखवा" किंवा "विश्लेषण"
 • "मला सर्व उत्पाद दाखवा"
 • "लॅपटॉप शोधा"
 • "सर्वात स्वस्त उत्पाद काय आहे?"
@@ -175,13 +181,17 @@ def add_product(request):
         description = request.POST.get('description')
         price = request.POST.get('price')
         quantity = request.POST.get('quantity')
+        category = request.POST.get('category')
+        image = request.FILES.get('image')
 
         # Create new product
         Product.objects.create(
             name=name,
             description=description,
             price=price,
-            quantity=quantity
+            quantity=quantity,
+            category=category,
+            image=image
         )
         messages.success(request, 'Product added successfully!')
         return redirect('display')
@@ -198,6 +208,9 @@ def update_product(request, product_id):
         product.description = request.POST.get('description')
         product.price = request.POST.get('price')
         product.quantity = request.POST.get('quantity')
+        product.category = request.POST.get('category')
+        if request.FILES.get('image'):
+            product.image = request.FILES.get('image')
         product.save()
         messages.success(request, 'Product updated successfully!')
         return redirect('display')
@@ -381,6 +394,48 @@ def chatbot_response(request):
                 else:  # Marathi
                     response['suggestions'] = ['उत्पाद काढा', 'आयटम काढा']
 
+            elif any(word in user_message for word in ['dashboard', 'analytics', 'statistics', 'stats', 'report', 'डैशबोर्ड', 'विश्लेषण', 'आकडेवारी']):
+                total_products = Product.objects.count()
+                total_value = Product.objects.aggregate(total=Sum('price'))['total'] or 0
+                low_stock = Product.objects.filter(quantity__lte=5).count()
+                categories = Product.objects.values('category').distinct().count()
+
+                response['response'] = f"""📊 Here's your inventory overview:
+
+• 📦 Total Products: {total_products}
+• 💰 Total Value: Rs {total_value:.2f}
+• ⚠️ Low Stock Items: {low_stock}
+• 📂 Product Categories: {categories}
+
+You can view detailed charts and analytics on the Dashboard page!"""
+
+                if language == 'hi':
+                    response['response'] = f"""📊 आपकी इन्वेंटरी का अवलोकन:
+
+• 📦 कुल उत्पाद: {total_products}
+• 💰 कुल मूल्य: रु {total_value:.2f}
+• ⚠️ कम स्टॉक आइटम: {low_stock}
+• 📂 उत्पाद श्रेणियां: {categories}
+
+डैशबोर्ड पेज पर विस्तृत चार्ट और विश्लेषण देख सकते हैं!"""
+                elif language == 'mr':
+                    response['response'] = f"""📊 तुमच्या इन्वेंटरीचा आढावा:
+
+• 📦 एकूण उत्पाद: {total_products}
+• 💰 एकूण मूल्य: रु {total_value:.2f}
+• ⚠️ कमी स्टॉक आयटम: {low_stock}
+• 📂 उत्पाद श्रेणी: {categories}
+
+डॅशबोर्ड पेजवर तपशीलवार चार्ट आणि विश्लेषण पाहू शकता!"""
+
+            elif any(word in user_message for word in ['total products', 'कुल उत्पाद', 'एकूण उत्पाद']):
+                total = Product.objects.count()
+                response['response'] = f"You have {total} products in your inventory."
+                if language == 'hi':
+                    response['response'] = f"आपकी इन्वेंटरी में {total} उत्पाद हैं।"
+                elif language == 'mr':
+                    response['response'] = f"तुमच्या इन्वेंटरीमध्ये {total} उत्पाद आहेत।"
+
             elif any(word in user_message for word in ['help', 'commands', 'what can you do', 'मदद', 'कमांड', 'क्या कर सकते', 'सहाय्य', 'काय करू शकता']):
                 response['response'] = responses['help']
 
@@ -412,3 +467,42 @@ def chatbot_response(request):
             })
 
     return JsonResponse({'error': 'Invalid request method'})
+
+
+@login_required
+
+def dashboard_view(request):
+    # Get dashboard statistics
+    total_products = Product.objects.count()
+    total_value = Product.objects.aggregate(total=Sum('price'))['total'] or 0
+    low_stock_products = Product.objects.filter(quantity__lte=5).count()
+    out_of_stock_products = Product.objects.filter(quantity=0).count()
+
+    # Category-wise count (convert to list for JSON serialization)
+    category_counts = list(Product.objects.values('category').annotate(
+        count=Count('id'),
+        total_value=Sum('price')
+    ).order_by('-count'))
+
+    # Price ranges for chart (already a list)
+    price_ranges = [
+        {'range': '0-500', 'count': Product.objects.filter(price__lt=500).count()},
+        {'range': '500-1000', 'count': Product.objects.filter(price__gte=500, price__lt=1000).count()},
+        {'range': '1000-5000', 'count': Product.objects.filter(price__gte=1000, price__lt=5000).count()},
+        {'range': '5000+', 'count': Product.objects.filter(price__gte=5000).count()},
+    ]
+
+    # Recent products (last 5)
+    recent_products = Product.objects.order_by('-created_at')[:5]
+
+    context = {
+        'total_products': total_products,
+        'total_value': total_value,
+        'low_stock_products': low_stock_products,
+        'out_of_stock_products': out_of_stock_products,
+        'category_counts': category_counts,
+        'price_ranges': price_ranges,
+        'recent_products': recent_products,
+    }
+
+    return render(request, 'prod_app/dashboard.html', context)
