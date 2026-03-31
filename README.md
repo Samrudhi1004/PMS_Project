@@ -1,4 +1,4 @@
-# 📌 Product Management System (PMS) with AI Assistant
+# 📌 Product Management System (PMS) with AI Assistant -STOCKNOVA
 
 ## 🚀 Overview
 
